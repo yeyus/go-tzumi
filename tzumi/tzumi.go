@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yeyus/go-tzumi/tzumi/buffer"
 	"github.com/yeyus/go-tzumi/tzumi/commands"
 	"github.com/yeyus/go-tzumi/tzumi/responses"
 )
@@ -21,6 +22,7 @@ type TzumiMagicTV struct {
 	responseChannel chan responses.Response
 	Debug           bool
 	State           State
+	TSBuffer        buffer.Buffer
 }
 
 type Callback func(response responses.Response)
@@ -118,10 +120,13 @@ func (t *TzumiMagicTV) Login(cb Callback) {
 	cb(response)
 }
 
-func (t *TzumiMagicTV) Tune(frequency int, program int, cb Callback) {
+func (t *TzumiMagicTV) Tune(frequency int, program int, initServer bool, cb Callback) {
 	t.SendCommand(commands.NewTuneRequest(frequency, program))
 	t.setState(TUNING)
 	response := <-t.responseChannel
+	if t.State == TUNED && initServer {
+		t.tsLoop()
+	}
 	cb(response)
 }
 
@@ -140,4 +145,6 @@ func (t *TzumiMagicTV) GetSignalStatus(cb Callback) {
 func (t *TzumiMagicTV) Close() {
 	log.Printf("Clossing channel and tcp processing...")
 	t.setState(DISCONNECTED)
+	close(t.CommandChannel)
+	close(t.responseChannel)
 }

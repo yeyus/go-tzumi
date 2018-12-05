@@ -30,13 +30,5 @@ func (t *TzumiMagicTV) setState(newState State) {
 	if t.Debug {
 		log.Printf("[DEBUG] New state is %s", newState.String())
 	}
-
-	switch newState {
-	case TUNED:
-		t.tsLoop()
-	case DISCONNECTED:
-		close(t.CommandChannel)
-		close(t.responseChannel)
-	}
 	t.State = newState
 }
