@@ -3,25 +3,10 @@ package buffer
 import (
 	"container/list"
 	"container/ring"
+	"context"
+	"golang.org/x/sync/semaphore"
 	"io"
 )
-
-type semaphore chan int
-
-// acquire n resources
-func (s semaphore) Acquire(n int) {
-	e := n
-	for i := 0; i < n; i++ {
-		s <- e
-	}
-}
-
-// release n resources
-func (s semaphore) Release(n int) {
-	for i := 0; i < n; i++ {
-		<-s
-	}
-}
 
 type Buffer struct {
 	bufferSize   int
@@ -56,7 +41,7 @@ func (b *Buffer) incrementAllReaders() {
 
 func (b *Buffer) NewReader() io.Reader {
 	l := &lector{
-		semaphore:   make(semaphore, b.bufferSize),
+		semaphore:   semaphore.NewWeighted(int64(b.bufferSize)),
 		ReadPointer: b.WritePointer,
 	}
 	b.readers.PushBack(l)
@@ -68,12 +53,20 @@ func (b *Buffer) NewReader() io.Reader {
 // ------
 
 type lector struct {
-	semaphore   semaphore
+	semaphore   *semaphore.Weighted
 	ReadPointer *ring.Ring
 }
 
 func (l *lector) Read(p []byte) (n int, err error) {
-	l.semaphore.Acquire(1)
+Start:
+	err = l.semaphore.Acquire(context.TODO(), 1)
+	if err != nil {
+		return 0, err
+	}
+
+	if l.ReadPointer.Value == nil {
+		goto Start
+	}
 	copied := copy(p, l.ReadPointer.Value.([]byte))
 	l.ReadPointer = l.ReadPointer.Next()
 

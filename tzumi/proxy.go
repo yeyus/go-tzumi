@@ -83,7 +83,7 @@ func (t *TzumiMagicTV) handleTSRequest(conn net.Conn) {
 		one := []byte{}
 		conn.SetReadDeadline(time.Now())
 		if _, err := conn.Read(one); err == io.EOF {
-			log.Printf("%s detected client left", conn.RemoteAddr)
+			log.Printf("%s detected client left", conn.RemoteAddr())
 			break
 		} else {
 			conn.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
