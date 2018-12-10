@@ -1,11 +1,16 @@
 language: go
-
 go:
-  - 1.11.1
+  - 1.11.x
+  - master
 
-install:
-  - go get -d -v ./...
+os:
+  - linux
+
+dist: trusty
+sudo: false
+
+install: true
 
 script:
-  - go test -v ./...
-  - go test -coverprofile=cover.out && go tool cover -html=cover.out -o coverage.html || true
+  - env GO111MODULE=on go build 
+  - env GO111MODULE=on go test
