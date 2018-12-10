@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - 1.11.1
+
+install:
+  - go get -d -v ./...
+
+script:
+  - go test -v ./...
+  - go test -coverprofile=cover.out && go tool cover -html=cover.out -o coverage.html || true
