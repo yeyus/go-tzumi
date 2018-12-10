@@ -1,4 +1,4 @@
-Tzumi MagicTV
+Tzumi MagicTV ![Build Status](https://travis-ci.org/yeyus/go-tzumi.svg?branch=master)
 =============
 
 Disable auto-shutdown
