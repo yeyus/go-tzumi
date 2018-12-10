@@ -76,7 +76,9 @@ func (t *TzumiMagicTV) handleTSRequest(conn net.Conn) {
 			continue
 		}
 		data := buf[:size]
-		log.Printf("Read new data from connection, bytes %d", len(data))
+		if t.Debug {
+			log.Printf("Read new data from connection, bytes %d", len(data))
+		}
 		conn.Write(data)
 
 		// detect if connection is closed
