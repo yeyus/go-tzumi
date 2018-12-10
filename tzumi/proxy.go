@@ -76,14 +76,16 @@ func (t *TzumiMagicTV) handleTSRequest(conn net.Conn) {
 			continue
 		}
 		data := buf[:size]
-		log.Printf("Read new data from connection, bytes %d", len(data))
+		if t.Debug {
+			log.Printf("Read new data from connection, bytes %d", len(data))
+		}
 		conn.Write(data)
 
 		// detect if connection is closed
 		one := []byte{}
 		conn.SetReadDeadline(time.Now())
 		if _, err := conn.Read(one); err == io.EOF {
-			log.Printf("%s detected client left", conn.RemoteAddr)
+			log.Printf("%s detected client left", conn.RemoteAddr())
 			break
 		} else {
 			conn.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
