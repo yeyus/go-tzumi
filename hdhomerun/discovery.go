@@ -2,9 +2,9 @@ package hdhomerun
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"github.com/yeyus/go-tzumi/hdhomerun/protocol"
+	"log"
 	"net"
 	"time"
 )
@@ -31,21 +31,30 @@ func (hd *HDHomerunEmulator) discoveryServer(ctx context.Context) (err error) {
 				return
 			}
 
-			fmt.Printf("packet-received: bytes=%d from=%s\n",
+			log.Printf("packet-received: bytes=%d from=%s\n",
 				n, addr.String())
 
 			var rpy protocol.Packet
 			pkt := protocol.NewPacket(buffer[:n])
-			if pkt.Type == protocol.HDHOMERUN_TYPE_DISCOVER_REQ &&
-				(binary.BigEndian.Uint32(pkt.Tags[0].Value) == HDHOMERUN_DEVICE_TYPE_WILDCARD || binary.BigEndian.Uint32(pkt.Tags[0].Value) == HDHOMERUN_DEVICE_TYPE_TUNER) &&
-				(binary.BigEndian.Uint32(pkt.Tags[1].Value) == HDHOMERUN_DEVICE_ID_WILDCARD || binary.BigEndian.Uint32(pkt.Tags[1].Value) == hd.DeviceID) {
-				rpyMsg := protocol.DiscoveryResponseMsg{
-					DeviceType: HDHOMERUN_DEVICE_TYPE_TUNER,
-					DeviceId:   hd.DeviceID,
-				}
-				rpy = rpyMsg.Packet()
+			msg, err := protocol.ParseDiscoveryMsg(pkt)
+			if err != nil {
+				log.Printf("error parsing incoming discovery packet: %s", err)
+				log.Printf("packet was: %v", pkt)
+				continue
 			}
-			fmt.Printf("Received packet: %v\n", pkt)
+
+			log.Printf("received packet: %v", pkt)
+			if !msg.IsAddressedToSelf(hd.DeviceID) {
+				log.Printf("packet wasn't addressed to this device!")
+				continue
+			}
+
+			rpyMsg := protocol.DiscoveryMsg{
+				Type:       protocol.HDHOMERUN_TYPE_DISCOVER_RPY,
+				DeviceType: protocol.HDHOMERUN_DEVICE_TYPE_TUNER,
+				DeviceId:   hd.DeviceID,
+			}
+			rpy = rpyMsg.Packet()
 
 			deadline := time.Now().Add(5 * time.Second)
 			err = pc.SetWriteDeadline(deadline)
@@ -61,7 +70,7 @@ func (hd *HDHomerunEmulator) discoveryServer(ctx context.Context) (err error) {
 				return
 			}
 
-			fmt.Printf("packet-written: bytes=%d to=%s\n", n, addr.String())
+			log.Printf("packet-written: bytes=%d to=%s\n", n, addr.String())
 		}
 	}()
 

@@ -76,6 +76,17 @@ func (p *Packet) IsReply() bool {
 	return p.Type == HDHOMERUN_TYPE_UPGRADE_RPY || p.Type == HDHOMERUN_TYPE_GETSET_RPY || p.Type == HDHOMERUN_TYPE_DISCOVER_RPY
 }
 
+func (p *Packet) GetTLVByTag(tag PayloadTag) (found *TLV) {
+	for _, tlv := range p.Tags {
+		if tlv.Tag == tag {
+			found = tlv
+			break
+		}
+	}
+
+	return
+}
+
 func (p *Packet) Serialize() []byte {
 	buf := make([]byte, 3072)
 	length := uint16(0)
