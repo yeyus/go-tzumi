@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 )
 
@@ -108,6 +109,15 @@ func (p *Packet) Serialize() []byte {
 	binary.LittleEndian.PutUint32(buf[length+2+2:], crc32.ChecksumIEEE(buf[0:length+2+2]))
 
 	return buf[:2+2+length+4]
+}
+
+func (p *Packet) String() string {
+	crc := "Incorrect"
+	if p.IsValid() {
+		crc = "OK"
+	}
+
+	return fmt.Sprintf("Packet{ Type: %s, Length: %d, Tags: %s, CRC: %s}", p.Type, p.Length, p.Tags, crc)
 }
 
 // Payloads

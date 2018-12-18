@@ -14,6 +14,7 @@ type DiscoveryMsg struct {
 	Type       PacketType
 	DeviceType uint32
 	DeviceId   uint32
+	TunerCount uint8
 }
 
 func ParseDiscoveryMsg(packet *Packet) (*DiscoveryMsg, error) {
@@ -31,10 +32,17 @@ func ParseDiscoveryMsg(packet *Packet) (*DiscoveryMsg, error) {
 		return nil, errors.New("missing HDHOMERUN_TAG_DEVICE_TYPE")
 	}
 
+	tunerCount := uint8(0)
+	tunerCountTlv := packet.GetTLVByTag(HDHOMERUN_TAG_TUNER_COUNT)
+	if tunerCountTlv != nil {
+		tunerCount = uint8(tunerCountTlv.Value[0])
+	}
+
 	msg := &DiscoveryMsg{
 		Type:       packet.Type,
 		DeviceType: binary.BigEndian.Uint32(deviceType.Value),
 		DeviceId:   binary.BigEndian.Uint32(deviceId.Value),
+		TunerCount: tunerCount,
 	}
 
 	return msg, nil
@@ -47,6 +55,8 @@ func (msg *DiscoveryMsg) Packet() Packet {
 	deviceId := make([]byte, 4)
 	binary.BigEndian.PutUint32(deviceId, msg.DeviceId)
 
+	tunerCount := make([]byte, 1)
+	tunerCount[0] = msg.TunerCount
 	p := Packet{
 		Type: msg.Type,
 		Tags: []*TLV{
@@ -59,6 +69,11 @@ func (msg *DiscoveryMsg) Packet() Packet {
 				Tag:    HDHOMERUN_TAG_DEVICE_ID,
 				Length: 4,
 				Value:  deviceId,
+			},
+			&TLV{
+				Tag:    HDHOMERUN_TAG_TUNER_COUNT,
+				Length: 1,
+				Value:  tunerCount,
 			},
 		},
 	}

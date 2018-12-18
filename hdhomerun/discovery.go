@@ -3,10 +3,12 @@ package hdhomerun
 import (
 	"context"
 	"fmt"
-	"github.com/yeyus/go-tzumi/hdhomerun/protocol"
 	"log"
 	"net"
+	"strings"
 	"time"
+
+	"github.com/yeyus/go-tzumi/hdhomerun/protocol"
 )
 
 const maxBufferSize = 1024
@@ -29,6 +31,9 @@ func (hd *HDHomerunEmulator) discoveryServer(ctx context.Context) (err error) {
 			if err != nil {
 				doneChan <- err
 				return
+			} else if strings.Contains(addr.String(), "127.0.0.1") {
+				// ignore localhost packages
+				continue
 			}
 
 			log.Printf("packet-received: bytes=%d from=%s\n",
@@ -53,6 +58,7 @@ func (hd *HDHomerunEmulator) discoveryServer(ctx context.Context) (err error) {
 				Type:       protocol.HDHOMERUN_TYPE_DISCOVER_RPY,
 				DeviceType: protocol.HDHOMERUN_DEVICE_TYPE_TUNER,
 				DeviceId:   hd.DeviceID,
+				TunerCount: 1,
 			}
 			rpy = rpyMsg.Packet()
 
